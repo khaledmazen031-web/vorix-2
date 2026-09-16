@@ -77,35 +77,14 @@ document.addEventListener("click", playMusic, { once: true });
 
 
 
-// Fallback categories/products used only when Supabase isn't configured yet
-// or the "categories" table is empty. Once the admin adds real sections in
-// the dashboard, those are loaded from Supabase and replace this data.
-const fallbackCategories = [
-    { id: "tshirts", name: "T-Shirts", image: "https://i.postimg.cc/KYzBVP7d/IMG-20260909-142026.png" },
-    { id: "shoes", name: "Shoes", image: "https://i.postimg.cc/CK1ktGC9/IMG-20260909-142057.png" },
-    { id: "pants", name: "Pants", image: "https://i.postimg.cc/fbLmFc7G/IMG-20260909-142108.png" },
-    { id: "hoodies", name: "Hoodies", image: "https://i.postimg.cc/7L60c31d/IMG-20260909-142044.png" }
-];
-
-let categoryData = {
-    tshirts: [
-        { name: "Classic Black T-Shirt", price: "350 EGP", img: "https://i.postimg.cc/KYzBVP7d/IMG-20260909-142026.png", colors: [{ name: "Black", hex: "#000000" }] },
-        { name: "White Oversized Tee", price: "400 EGP", img: "https://i.postimg.cc/KYzBVP7d/IMG-20260909-142026.png", colors: [{ name: "White", hex: "#ffffff" }] }
-    ],
-    shoes: [
-        { name: "VORIX Runner Sneakers", price: "1200 EGP", img: "https://i.postimg.cc/CK1ktGC9/IMG-20260909-142057.png", colors: [{ name: "Black", hex: "#000000" }, { name: "White", hex: "#ffffff" }] }
-    ],
-    pants: [
-        { name: "Cargo Street Pants", price: "750 EGP", img: "https://i.postimg.cc/fbLmFc7G/IMG-20260909-142108.png", colors: [{ name: "Black", hex: "#000000" }] }
-    ],
-    hoodies: [
-        { name: "Heavyweight Black Hoodie", price: "950 EGP", img: "https://i.postimg.cc/7L60c31d/IMG-20260909-142044.png", colors: [{ name: "Black", hex: "#000000" }] }
-    ]
-};
+// Categories/products are loaded entirely from Supabase (see
+// loadCategoriesFromSupabase / loadProductsFromSupabase below). No hardcoded
+// fallback data — if Supabase has no rows yet, the sections stay empty until
+// the admin adds them from the dashboard.
+let categoryData = {};
 
 // Renders the category cards into #categories and (re)binds their click
-// handlers. Called once with the fallback list immediately, then again once
-// the real sections are loaded from Supabase.
+// handlers. Called once the real sections are loaded from Supabase.
 function renderCategoryCards(list) {
     if (!categoriesContainer) return;
 
@@ -138,8 +117,6 @@ function attachCategoryCardListeners() {
 // Pull live sections (admin-managed) from Supabase. Falls back to the
 // hardcoded list above if Supabase isn't configured yet or the table is empty.
 async function loadCategoriesFromSupabase() {
-    renderCategoryCards(fallbackCategories);
-
     if (typeof supabaseClient === "undefined" || !supabaseClient) return;
     try {
         const { data, error } = await supabaseClient
@@ -156,8 +133,8 @@ async function loadCategoriesFromSupabase() {
     }
 }
 
-// Pull live products from Supabase (admin-managed). Falls back to the
-// hardcoded list above if Supabase isn't configured yet or the fetch fails.
+// Pull live products from Supabase (admin-managed). If Supabase isn't
+// configured yet or the fetch fails, categoryData stays empty.
 async function loadProductsFromSupabase() {
     if (typeof supabaseClient === "undefined" || !supabaseClient) return;
     try {
