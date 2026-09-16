@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORIX</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<audio id="bgMusic" loop preload="auto">
+    <source src="https://xgwaqdtufwxqllytpxmv.supabase.co/storage/v1/object/public/Anything/Dave_ft_Tems_-_Raindance.mp3" type="audio/mpeg">
+</audio>
+
+<header class="header">
+    <div class="logo">
+        VORIX
+    </div>
+
+    <div class="header-icons">
+        <button type="button" class="search-btn" id="searchButton">⌕</button>
+        <button type="button" class="cart-btn" id="cartButton">
+            🛒
+            <span id="cartCount">0</span>
+        </button>
+    </div>
+</header>
+
+<main>
+
+    <!-- HERO SECTION -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <p class="hero-small-title">VORIX</p>
+            <h1>
+                WEAR YOUR<br>
+                <span>STYLE.</span>
+            </h1>
+            <p class="hero-description">
+                Discover our latest collection, designed for your everyday style.
+            </p>
+            <a href="#shop" class="hero-btn">SHOP NOW</a>
+        </div>
+    </section>
+
+    
+    <section class="shop" id="shop">
+        <div class="section-title">
+            <p>OUR COLLECTION</p>
+            <h2>Latest <span>Collection</span></h2>
+        </div>
+
+        <div class="categories" id="categories">
+            <p class="empty-cart" id="categoriesLoading">Loading categories...</p>
+        </div>
+    </section>
+
+    
+    <section class="about" id="about">
+        <div class="about-content">
+            <p class="section-label">ABOUT US</p>
+            <h2>
+                STYLE IS<br>
+                <span>EVERYTHING.</span>
+            </h2>
+            <p>VORIX is a fashion brand created for people who want to express their personality through what they wear.</p>
+        </div>
+    </section>
+
+    
+    <section class="contact" id="contact">
+        <div class="section-title">
+            <p>GET IN TOUCH</p>
+            <h2>Contact <span>Us</span></h2>
+        </div>
+        <div class="contact-info">
+            <p>Instagram: @VORIX</p>
+            <p>Phone: 01117704856</p>
+            <p>Email: VORIX@example.com</p>
+        </div>
+    </section>
+
+</main>
+
+
+<div class="cart-overlay" id="cartOverlay">
+    <div class="cart">
+        <div class="cart-header">
+            <h2>Your Cart</h2>
+            <button type="button" id="closeCart">×</button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <p class="empty-cart">Your cart is empty.</p>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total</span>
+                <strong id="cartTotal">0 EGP</strong>
+            </div>
+            <button type="button" class="checkout-btn" id="payBtn">الدفع</button>
+        </div>
+    </div>
+</div>
+
+<div class="cart-overlay" id="checkoutOverlay">
+    <div class="cart checkout-box">
+        <div class="cart-header">
+            <h2>إتمام الدفع</h2>
+            <button type="button" id="closeCheckout">×</button>
+        </div>
+        <form id="checkoutForm" class="checkout-form">
+            <label>الاسم</label>
+            <input type="text" id="checkoutName" required>
+            <label>رقم الموبايل</label>
+            <input type="tel" id="checkoutPhone" placeholder="01xxxxxxxxx" required>
+
+            <label>اختر طريقة الدفع</label>
+            <div class="payment-methods">
+                <button type="button" class="payment-method-btn" data-method="vodafone_cash">
+                    <span class="pm-icon">📱</span> فودافون كاش
+                </button>
+                <button type="button" class="payment-method-btn" data-method="visa">
+                    <span class="pm-icon">💳</span> فيزا / ماستركارد
+                </button>
+            </div>
+
+            <button type="submit" id="confirmPaymentBtn" class="confirm-payment-btn" disabled>تأكيد الدفع</button>
+            <p id="checkoutError" class="error-text"></p>
+        </form>
+    </div>
+</div>
+
+
+<div class="cart-overlay" id="categoryOverlay">
+    <div class="cart">
+        <div class="cart-header">
+            <h2 id="categoryTitle">Category Products</h2>
+            <button type="button" id="closeCategory">×</button>
+        </div>
+        <div class="cart-items" id="categoryProductsContainer">
+            <p class="empty-cart">Loading products...</p>
+        </div>
+    </div>
+</div>
+
+<div class="cart-overlay" id="searchOverlay">
+    <div class="cart">
+        <div class="cart-header">
+            <h2>Search</h2>
+            <button type="button" id="closeSearch">×</button>
+        </div>
+        <div class="search-input-wrap">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search for a product...">
+        </div>
+        <div class="cart-items" id="searchResultsContainer">
+            <p class="empty-cart">Start typing to search products.</p>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="logo">VORIX</div>
+    <p>© 2026 VORIX. All Rights Reserved.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
