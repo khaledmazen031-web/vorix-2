@@ -1,8 +1,8 @@
 // Fill these in from Supabase Dashboard -> Project Settings -> API
 // SUPABASE_URL   = "Project URL"
 // SUPABASE_ANON_KEY = "anon public" key (safe to expose client-side)
-const SUPABASE_URL = "https://sjlykfrwmwaexypnimsk.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_0SyuKMjE9nVVphpeolnlRg_Z8q3SXrv";
+const SUPABASE_URL = "https://xtzohrbnpuohrunawwem.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_CC7tbP2AdT6lqBDDSp1mfQ_9Ag-umgg";
 
 let supabaseClient = null;
 try {
