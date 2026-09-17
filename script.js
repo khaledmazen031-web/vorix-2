@@ -214,13 +214,6 @@ function renderProductGrid(container, products) {
                 <h4 class="product-card-name">${escapeHTML(item.name)}</h4>
                 <p class="product-card-price">${item.price}</p>
                 ${swatchesHTML}
-                <select class="size-select">
-                    <option value="S">S</option>
-                    <option value="M" selected>M</option>
-                    <option value="L">L</option>
-                    <option value="XL">XL</option>
-                    <option value="XXL">XXL</option>
-                </select>
                 <button type="button" class="product-card-add" onclick="window.addToCartFromCategory('${escapeHTML(item.name)}', '${item.price}', '${item.img}', this)">Add 🛒</button>
             </div>
         `;
@@ -329,14 +322,12 @@ if (searchInput) {
 
 window.addToCartFromCategory = function(name, price, img, buttonElement) {
     const productItemContainer = buttonElement.closest(".product-card-big");
-    const sizeSelect = productItemContainer ? productItemContainer.querySelector(".size-select") : null;
-    const selectedSize = sizeSelect ? sizeSelect.value : "M";
 
     const selectedSwatch = productItemContainer ? productItemContainer.querySelector(".color-swatch.selected") : null;
     const selectedColor = selectedSwatch ? selectedSwatch.getAttribute("data-color-name") : null;
 
     const numericPrice = parseFloat(price.replace(/[^0-9.]/g, "")) || 0;
-    const cartItemId = `${name}-${selectedSize}-${selectedColor || "default"}`;
+    const cartItemId = `${name}-${selectedColor || "default"}`;
 
     const existingItem = cart.find(function(item) {
         return item.id === cartItemId;
@@ -348,7 +339,6 @@ window.addToCartFromCategory = function(name, price, img, buttonElement) {
         cart.push({
             id: cartItemId,
             name: name,
-            size: selectedSize,
             color: selectedColor,
             price: numericPrice,
             rawPrice: price,
@@ -358,7 +348,7 @@ window.addToCartFromCategory = function(name, price, img, buttonElement) {
     }
 
     updateCart();
-    alert(`Added ${name}${selectedColor ? " (" + selectedColor + ")" : ""} (Size: ${selectedSize}) to cart! 🛒`);
+    alert(`Added ${name}${selectedColor ? " (" + selectedColor + ")" : ""} to cart! 🛒`);
 };
 
 window.increaseQuantity = function(id) {
@@ -412,7 +402,7 @@ function updateCart() {
         const price = Number(product.price);
         const quantity = Number(product.quantity);
         const productTotal = price * quantity;
-        const itemId = product.id || `${product.name}-${product.size || 'M'}`;
+        const itemId = product.id || `${product.name}-${product.color || 'default'}`;
 
         total += productTotal;
         count += quantity;
@@ -426,7 +416,7 @@ function updateCart() {
                 ${product.img ? `<img src="${product.img}" alt="${escapeHTML(product.name)}" style="width: 55px; height: 55px; object-fit: cover; border-radius: 8px;">` : ''}
                 <div>
                     <h4 style="font-size: 13px; margin-bottom: 2px; color: #333;">${escapeHTML(product.name)}</h4>
-                    <p style="color: #666; font-size: 11px; margin-bottom: 4px;">Size: <b>${product.size || 'M'}</b>${product.color ? ` | Color: <b>${escapeHTML(product.color)}</b>` : ''} | ${price.toLocaleString()} EGP</p>
+                    <p style="color: #666; font-size: 11px; margin-bottom: 4px;">${product.color ? `Color: <b>${escapeHTML(product.color)}</b> | ` : ''}${price.toLocaleString()} EGP</p>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <button type="button" onclick="window.decreaseQuantity('${itemId}')" style="background: #eee; border: none; width: 22px; height: 22px; border-radius: 4px; cursor: pointer; font-weight: bold;">-</button>
                         <span style="font-size: 13px; font-weight: bold;">${quantity}</span>
@@ -564,7 +554,6 @@ checkoutForm.addEventListener("submit", async function (event) {
         total += price * quantity;
         orderItems.push({
             name: product.name,
-            size: product.size || "M",
             color: product.color || null,
             price: price,
             quantity: quantity,
@@ -604,6 +593,50 @@ checkoutForm.addEventListener("submit", async function (event) {
         confirmPaymentBtn.textContent = "تأكيد الدفع";
     }
 });
+
+
+// ---------- IMAGE LIGHTBOX ----------
+// Clicking any product image (in the products grid, category overlay,
+// or search results) opens it enlarged in a full-screen viewer.
+const imageLightbox = document.getElementById("imageLightbox");
+const imageLightboxImg = document.getElementById("imageLightboxImg");
+const closeImageLightbox = document.getElementById("closeImageLightbox");
+
+function openImageLightbox(src, alt) {
+    if (!imageLightbox || !imageLightboxImg || !src) return;
+    imageLightboxImg.src = src;
+    imageLightboxImg.alt = alt || "";
+    imageLightbox.classList.add("active");
+}
+
+function closeImageLightboxWindow() {
+    if (!imageLightbox) return;
+    imageLightbox.classList.remove("active");
+}
+
+if (closeImageLightbox) {
+    closeImageLightbox.addEventListener("click", closeImageLightboxWindow);
+}
+
+if (imageLightbox) {
+    imageLightbox.addEventListener("click", function (event) {
+        if (event.target === imageLightbox) closeImageLightboxWindow();
+    });
+}
+
+// Delegated listener: works for images rendered now and later (dynamic product cards).
+document.addEventListener("click", function (event) {
+    const img = event.target.closest(".product-image img, .product-card-img img");
+    if (img) {
+        event.stopPropagation();
+        openImageLightbox(img.getAttribute("src"), img.getAttribute("alt"));
+    }
+});
+
+document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closeImageLightboxWindow();
+});
+
 
 
 function escapeHTML(text) {
