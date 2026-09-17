@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     data.forEach(function (order) {
       const itemsText = (order.items || [])
-        .map(function (it) { return `${it.name} (${it.size || "M"}) x${it.quantity}`; })
+        .map(function (it) { return `${it.name} x${it.quantity}`; })
         .join("، ");
 
       const row = document.createElement("tr");
