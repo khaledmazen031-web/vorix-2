@@ -400,6 +400,12 @@ button {
     transition: transform 0.4s ease;
 }
 
+/* Any product image (grid or big card) shows a zoom cursor to hint it's clickable */
+.product-image img,
+.product-card-img img {
+    cursor: zoom-in;
+}
+
 .product-card:hover .product-image img {
     transform: scale(1.04);
 }
@@ -524,6 +530,58 @@ button {
 
 
 
+/* IMAGE LIGHTBOX: full-screen enlarged product image */
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 12, 13, 0.9);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 100000;
+    padding: 30px;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.image-lightbox.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.image-lightbox img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    object-fit: contain;
+}
+
+.image-lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s ease;
+}
+
+.image-lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
 .cart-overlay {
     position: fixed;
     inset: 0;
@@ -602,6 +660,15 @@ button {
 #categoryOverlay .cart {
     width: 640px;
     height: 80vh;
+}
+
+/* Laptop/desktop: widen the product overlay so 4 cards fit comfortably side by side */
+@media (min-width: 769px) {
+    #categoryOverlay .cart,
+    #searchOverlay .cart {
+        width: 980px;
+        max-width: calc(100vw - 40px);
+    }
 }
 
 .checkout-box {
@@ -692,11 +759,11 @@ button {
 
 .product-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 14px;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     .product-grid {
         grid-template-columns: 1fr 1fr;
         gap: 10px;
