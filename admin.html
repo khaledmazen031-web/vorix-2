@@ -53,6 +53,21 @@
         <h2 id="statPending">0</h2>
       </div>
     </div>
+
+    <div class="panel-header" style="margin-top:32px;">
+      <h2>إعدادات الموقع</h2>
+    </div>
+    <form id="musicSettingsForm" class="modal-box" style="margin:0;">
+      <label>ملف أغنية الموقع</label>
+      <input type="file" id="musicFileInput" accept="audio/*">
+      <input type="hidden" id="musicUrlInput">
+      <audio id="musicPreviewPlayer" class="hidden" controls style="width:100%;"></audio>
+      <p id="musicFileMsg" class="error-text"></p>
+      <div class="modal-actions">
+        <button type="submit" class="primary-btn">حفظ</button>
+      </div>
+      <p id="musicSettingsMsg" class="error-text" style="color:var(--success);"></p>
+    </form>
   </section>
 
   <!-- ORDERS -->
@@ -136,8 +151,11 @@
     <select id="productCategory"></select>
     <label>السعر (EGP)</label>
     <input type="number" id="productPrice" min="0" step="1" required>
-    <label>رابط الصورة</label>
-    <input type="url" id="productImage" placeholder="https://...">
+    <label>صورة المنتج</label>
+    <input type="file" id="productImageFile" accept="image/*">
+    <input type="hidden" id="productImage">
+    <img id="productImagePreview" class="img-preview hidden" alt="معاينة الصورة">
+    <p id="productImageMsg" class="error-text"></p>
     <div class="modal-actions">
       <button type="button" id="cancelProductBtn" class="secondary-btn">إلغاء</button>
       <button type="submit" class="primary-btn">حفظ</button>
