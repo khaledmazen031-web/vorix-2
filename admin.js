@@ -139,8 +139,9 @@ document.addEventListener("DOMContentLoaded", function () {
       submitBtn.textContent = "حفظ";
 
       if (uploadError) {
+        console.error("Music upload error:", uploadError);
         musicFileMsg.style.color = "var(--danger)";
-        musicFileMsg.textContent = "فشل رفع الأغنية. حاول مرة أخرى.";
+        musicFileMsg.textContent = "فشل رفع الأغنية: " + (uploadError.message || uploadError.error || "خطأ غير معروف");
         return;
       }
 
@@ -436,8 +437,9 @@ document.addEventListener("DOMContentLoaded", function () {
         .upload(fileName, file);
 
       if (uploadError) {
+        console.error("Image upload error:", uploadError);
         imageMsg.style.color = "var(--danger)";
-        imageMsg.textContent = "فشل رفع الصورة. حاول مرة أخرى.";
+        imageMsg.textContent = "فشل رفع الصورة: " + (uploadError.message || uploadError.error || "خطأ غير معروف");
         submitBtn.disabled = false;
         submitBtn.textContent = "حفظ";
         return;
