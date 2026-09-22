@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
     loadOverview();
     loadOrders();
     loadCategories().then(loadProducts);
+    loadMusicSetting();
   }
 
   loginForm.addEventListener("submit", async function (e) {
@@ -84,6 +85,93 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("statPending").textContent = pending;
     }
   }
+
+  // ---------- SITE SETTINGS (MUSIC) ----------
+  const musicSettingsForm = document.getElementById("musicSettingsForm");
+  const musicUrlInput = document.getElementById("musicUrlInput");
+  const musicFileInput = document.getElementById("musicFileInput");
+  const musicPreviewPlayer = document.getElementById("musicPreviewPlayer");
+  const musicFileMsg = document.getElementById("musicFileMsg");
+  const musicSettingsMsg = document.getElementById("musicSettingsMsg");
+
+  async function loadMusicSetting() {
+    const { data, error } = await supabaseClient
+      .from("settings")
+      .select("music_url")
+      .eq("id", "site")
+      .single();
+
+    if (!error && data && data.music_url) {
+      musicUrlInput.value = data.music_url;
+      musicPreviewPlayer.src = data.music_url;
+      musicPreviewPlayer.classList.remove("hidden");
+    }
+  }
+
+  musicFileInput.addEventListener("change", function () {
+    const file = this.files[0];
+    if (!file) return;
+    musicPreviewPlayer.src = URL.createObjectURL(file);
+    musicPreviewPlayer.classList.remove("hidden");
+  });
+
+  musicSettingsForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    musicSettingsMsg.textContent = "";
+    musicFileMsg.textContent = "";
+    const submitBtn = musicSettingsForm.querySelector('button[type="submit"]');
+    const file = musicFileInput.files[0];
+    let url = musicUrlInput.value;
+
+    if (file) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "جاري رفع الأغنية...";
+
+      const ext = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+      const { error: uploadError } = await supabaseClient
+        .storage
+        .from("site-music")
+        .upload(fileName, file);
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "حفظ";
+
+      if (uploadError) {
+        musicFileMsg.style.color = "var(--danger)";
+        musicFileMsg.textContent = "فشل رفع الأغنية. حاول مرة أخرى.";
+        return;
+      }
+
+      const { data: publicUrlData } = supabaseClient
+        .storage
+        .from("site-music")
+        .getPublicUrl(fileName);
+
+      url = publicUrlData.publicUrl;
+      musicUrlInput.value = url;
+    }
+
+    if (!url) {
+      musicFileMsg.style.color = "var(--danger)";
+      musicFileMsg.textContent = "اختر ملف أغنية أولاً.";
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from("settings")
+      .upsert({ id: "site", music_url: url });
+
+    if (error) {
+      musicSettingsMsg.style.color = "var(--danger)";
+      musicSettingsMsg.textContent = "حصل خطأ أثناء الحفظ.";
+    } else {
+      musicFileInput.value = "";
+      musicSettingsMsg.style.color = "var(--success)";
+      musicSettingsMsg.textContent = "تم حفظ الأغنية بنجاح.";
+    }
+  });
 
   // ---------- ORDERS ----------
   const ordersBody = document.getElementById("ordersBody");
@@ -289,8 +377,30 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("productCategory").value = p ? p.category : (categoriesCache[0] ? categoriesCache[0].id : "");
     document.getElementById("productPrice").value = p ? p.price : "";
     document.getElementById("productImage").value = p ? p.image || "" : "";
+    document.getElementById("productImageFile").value = "";
+    document.getElementById("productImageMsg").textContent = "";
+    const preview = document.getElementById("productImagePreview");
+    if (p && p.image) {
+      preview.src = p.image;
+      preview.classList.remove("hidden");
+    } else {
+      preview.src = "";
+      preview.classList.add("hidden");
+    }
     productModal.classList.remove("hidden");
   }
+
+  document.getElementById("productImageFile").addEventListener("change", function () {
+    const file = this.files[0];
+    const preview = document.getElementById("productImagePreview");
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      preview.src = e.target.result;
+      preview.classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
+  });
 
   document.getElementById("addProductBtn").addEventListener("click", function () {
     if (categoriesCache.length === 0) {
@@ -306,11 +416,48 @@ document.addEventListener("DOMContentLoaded", function () {
   productForm.addEventListener("submit", async function (e) {
     e.preventDefault();
     const id = document.getElementById("productId").value;
+    const imageMsg = document.getElementById("productImageMsg");
+    const submitBtn = productForm.querySelector('button[type="submit"]');
+    const file = document.getElementById("productImageFile").files[0];
+    let imageUrl = document.getElementById("productImage").value;
+
+    if (file) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "جاري رفع الصورة...";
+      imageMsg.style.color = "var(--gray)";
+      imageMsg.textContent = "";
+
+      const ext = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+      const { error: uploadError } = await supabaseClient
+        .storage
+        .from("product-images")
+        .upload(fileName, file);
+
+      if (uploadError) {
+        imageMsg.style.color = "var(--danger)";
+        imageMsg.textContent = "فشل رفع الصورة. حاول مرة أخرى.";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "حفظ";
+        return;
+      }
+
+      const { data: publicUrlData } = supabaseClient
+        .storage
+        .from("product-images")
+        .getPublicUrl(fileName);
+
+      imageUrl = publicUrlData.publicUrl;
+      submitBtn.textContent = "حفظ";
+      submitBtn.disabled = false;
+    }
+
     const payload = {
       name: document.getElementById("productName").value.trim(),
       category: document.getElementById("productCategory").value,
       price: Number(document.getElementById("productPrice").value),
-      image: document.getElementById("productImage").value.trim()
+      image: imageUrl
     };
 
     if (id) {
