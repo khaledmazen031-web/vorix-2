@@ -259,7 +259,7 @@ button {
 
 .categories {
     display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: repeat(4, 1fr) !important;
     gap: 16px !important;
     padding: 20px 0 !important;
     width: 100% !important;
