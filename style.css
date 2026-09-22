@@ -890,10 +890,10 @@ button {
 @media screen and (max-width: 768px) {
 
     .categories {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        padding: 0 15px;
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+        padding: 0 15px !important;
     }
 
 
