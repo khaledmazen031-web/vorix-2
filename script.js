@@ -65,6 +65,28 @@ function saveCart() {
 
 
 const bgMusic = document.getElementById("bgMusic");
+const DEFAULT_MUSIC_URL = "https://xgwaqdtufwxqllytpxmv.supabase.co/storage/v1/object/public/Anything/Dave_ft_Tems_-_Raindance.mp3";
+
+async function loadMusicUrl() {
+    if (!bgMusic) return;
+    let url = DEFAULT_MUSIC_URL;
+    try {
+        if (typeof supabaseClient !== "undefined" && supabaseClient) {
+            const { data, error } = await supabaseClient
+                .from("settings")
+                .select("music_url")
+                .eq("id", "site")
+                .single();
+            if (!error && data && data.music_url) {
+                url = data.music_url;
+            }
+        }
+    } catch (e) {
+        console.log("STYLE TEAM: Could not load music setting, using default.", e);
+    }
+    bgMusic.src = url;
+}
+
 function playMusic() {
     if (bgMusic && typeof bgMusic.play === "function") {
         bgMusic.play().catch(function(error) {
@@ -72,6 +94,7 @@ function playMusic() {
         });
     }
 }
+loadMusicUrl();
 document.addEventListener("touchstart", playMusic, { once: true });
 document.addEventListener("click", playMusic, { once: true });
 
