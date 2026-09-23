@@ -67,24 +67,49 @@ function saveCart() {
 const bgMusic = document.getElementById("bgMusic");
 const DEFAULT_MUSIC_URL = "https://xgwaqdtufwxqllytpxmv.supabase.co/storage/v1/object/public/Anything/Dave_ft_Tems_-_Raindance.mp3";
 
-async function loadMusicUrl() {
-    if (!bgMusic) return;
-    let url = DEFAULT_MUSIC_URL;
-    try {
-        if (typeof supabaseClient !== "undefined" && supabaseClient) {
-            const { data, error } = await supabaseClient
-                .from("settings")
-                .select("music_url")
-                .eq("id", "site")
-                .single();
-            if (!error && data && data.music_url) {
-                url = data.music_url;
+// Playlist config lives in settings(id = "site").music_url as JSON:
+// { mode: "single" | "sequence" | "shuffle", current: "<track id>", tracks: [{ id, title, url }] }
+// A plain URL string (old format) is still supported.
+let musicTracks = [];
+let musicMode = "single";
+let musicIndex = 0;
+let musicQueue = [];
+let musicFailures = 0;
+let musicUnlocked = false;
+
+function parseMusicConfig(raw) {
+    if (!raw) return null;
+    const s = String(raw).trim();
+    if (s.charAt(0) === "{") {
+        try {
+            const cfg = JSON.parse(s);
+            if (cfg && Array.isArray(cfg.tracks)) {
+                const tracks = cfg.tracks.filter(function (t) { return t && t.url; }).slice(0, 4);
+                if (tracks.length) {
+                    return {
+                        mode: ["single", "sequence", "shuffle"].indexOf(cfg.mode) !== -1 ? cfg.mode : "single",
+                        current: cfg.current,
+                        tracks: tracks
+                    };
+                }
             }
-        }
-    } catch (e) {
-        console.log("STYLE TEAM: Could not load music setting, using default.", e);
+        } catch (e) { /* ignore, fall back to default */ }
+        return null;
     }
-    bgMusic.src = url;
+    return { mode: "single", current: null, tracks: [{ url: s }] };
+}
+
+function shuffleQueue(excludeIndex) {
+    const q = musicTracks.map(function (_, i) { return i; });
+    for (let i = q.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const t = q[i]; q[i] = q[j]; q[j] = t;
+    }
+    // avoid playing the same song twice in a row when a new round starts
+    if (q.length > 1 && q[0] === excludeIndex) {
+        const t = q[0]; q[0] = q[q.length - 1]; q[q.length - 1] = t;
+    }
+    musicQueue = q;
 }
 
 function playMusic() {
@@ -94,9 +119,88 @@ function playMusic() {
         });
     }
 }
+
+function loadTrack(i) {
+    musicIndex = i;
+    bgMusic.src = musicTracks[i].url;
+    if (musicUnlocked) playMusic();
+}
+
+function nextTrack() {
+    if (!musicTracks.length) return;
+    if (musicTracks.length === 1) {
+        bgMusic.currentTime = 0;
+        playMusic();
+        return;
+    }
+    let i;
+    if (musicMode === "shuffle") {
+        if (!musicQueue.length) shuffleQueue(musicIndex);
+        i = musicQueue.shift();
+    } else {
+        i = (musicIndex + 1) % musicTracks.length;
+    }
+    loadTrack(i);
+}
+
+function startMusic(cfg) {
+    musicTracks = cfg.tracks;
+    musicMode = cfg.mode;
+    // one song (or "single" mode) => the browser loops it; otherwise we move on at "ended"
+    bgMusic.loop = musicMode === "single" || musicTracks.length === 1;
+
+    let start = 0;
+    if (musicMode === "single") {
+        const idx = musicTracks.findIndex(function (t) { return t.id === cfg.current; });
+        start = idx >= 0 ? idx : 0;
+    } else if (musicMode === "shuffle") {
+        shuffleQueue(-1);
+        start = musicQueue.shift();
+    }
+    loadTrack(start);
+}
+
+async function loadMusicUrl() {
+    if (!bgMusic) return;
+    let cfg = null;
+    try {
+        if (typeof supabaseClient !== "undefined" && supabaseClient) {
+            const { data, error } = await supabaseClient
+                .from("settings")
+                .select("music_url")
+                .eq("id", "site")
+                .single();
+            if (!error && data) {
+                cfg = parseMusicConfig(data.music_url);
+            }
+        }
+    } catch (e) {
+        console.log("STYLE TEAM: Could not load music setting, using default.", e);
+    }
+    if (!cfg) {
+        cfg = { mode: "single", current: null, tracks: [{ url: DEFAULT_MUSIC_URL }] };
+    }
+    startMusic(cfg);
+}
+
+function unlockMusic() {
+    musicUnlocked = true;
+    if (bgMusic && bgMusic.getAttribute("src")) playMusic();
+}
+
+if (bgMusic) {
+    bgMusic.addEventListener("ended", nextTrack);
+    bgMusic.addEventListener("playing", function () { musicFailures = 0; });
+    bgMusic.addEventListener("error", function () {
+        // skip a broken file, but stop if every song fails
+        musicFailures++;
+        if (musicFailures >= musicTracks.length) return;
+        nextTrack();
+    });
+}
 loadMusicUrl();
-document.addEventListener("touchstart", playMusic, { once: true });
-document.addEventListener("click", playMusic, { once: true });
+document.addEventListener("touchstart", unlockMusic, { once: true });
+document.addEventListener("click", unlockMusic, { once: true });
 
 
 
