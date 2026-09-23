@@ -86,13 +86,157 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // ---------- SITE SETTINGS (MUSIC) ----------
+  // ---------- SITE SETTINGS (MUSIC PLAYLIST) ----------
+  // Stored in settings(id = "site").music_url as a JSON string:
+  // { v: 2, mode: "single" | "sequence" | "shuffle", current: "<track id>",
+  //   tracks: [{ id, title, url }, ...] }   (max 4 tracks)
+  // An old plain-URL value is still understood and shown as a single track.
+  const MAX_TRACKS = 4;
   const musicSettingsForm = document.getElementById("musicSettingsForm");
-  const musicUrlInput = document.getElementById("musicUrlInput");
+  const musicListEl = document.getElementById("musicList");
+  const musicListEmpty = document.getElementById("musicListEmpty");
+  const musicCountEl = document.getElementById("musicCount");
+  const addMusicBtn = document.getElementById("addMusicBtn");
   const musicFileInput = document.getElementById("musicFileInput");
-  const musicPreviewPlayer = document.getElementById("musicPreviewPlayer");
   const musicFileMsg = document.getElementById("musicFileMsg");
   const musicSettingsMsg = document.getElementById("musicSettingsMsg");
+  const musicModeRadios = musicSettingsForm.querySelectorAll('input[name="musicMode"]');
+  const musicSaveBtn = musicSettingsForm.querySelector('button[type="submit"]');
+
+  let musicState = { mode: "single", current: null, tracks: [] };
+
+  function setMusicMsg(el, text, ok) {
+    el.style.color = ok ? "var(--success)" : "var(--danger)";
+    el.textContent = text || "";
+  }
+
+  function newTrackId() {
+    return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function parseMusicConfig(raw) {
+    if (!raw) return null;
+    const s = String(raw).trim();
+    if (s.charAt(0) === "{") {
+      try {
+        const cfg = JSON.parse(s);
+        if (cfg && Array.isArray(cfg.tracks)) {
+          const tracks = cfg.tracks
+            .filter(function (t) { return t && t.url; })
+            .slice(0, MAX_TRACKS)
+            .map(function (t) {
+              return { id: t.id || newTrackId(), title: t.title || "أغنية", url: t.url };
+            });
+          const mode = ["single", "sequence", "shuffle"].indexOf(cfg.mode) !== -1 ? cfg.mode : "single";
+          return { mode: mode, current: cfg.current, tracks: tracks };
+        }
+      } catch (e) { /* fall through */ }
+      return null;
+    }
+    // legacy: a single plain URL
+    const id = newTrackId();
+    return { mode: "single", current: id, tracks: [{ id: id, title: "الأغنية الحالية", url: s }] };
+  }
+
+  function makeIconBtn(label, title, extraClass) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "icon-btn " + (extraClass || "");
+    b.textContent = label;
+    b.title = title;
+    return b;
+  }
+
+  function moveTrack(from, to) {
+    const t = musicState.tracks;
+    if (to < 0 || to >= t.length) return;
+    const item = t.splice(from, 1)[0];
+    t.splice(to, 0, item);
+    renderMusicList();
+  }
+
+  function removeTrack(index) {
+    musicState.tracks.splice(index, 1);
+    renderMusicList();
+    setMusicMsg(musicSettingsMsg, "اضغط حفظ لتطبيق التغييرات.", true);
+  }
+
+  function renderMusicList() {
+    const tracks = musicState.tracks;
+
+    if (!tracks.some(function (t) { return t.id === musicState.current; })) {
+      musicState.current = tracks.length ? tracks[0].id : null;
+    }
+
+    musicSettingsForm.dataset.mode = musicState.mode;
+    musicModeRadios.forEach(function (r) { r.checked = r.value === musicState.mode; });
+    musicCountEl.textContent = tracks.length;
+    musicListEmpty.classList.toggle("hidden", tracks.length > 0);
+    addMusicBtn.disabled = tracks.length >= MAX_TRACKS;
+    addMusicBtn.textContent = tracks.length >= MAX_TRACKS ? "وصلت للحد الأقصى (4 أغاني)" : "+ إضافة أغنية";
+
+    musicListEl.innerHTML = "";
+    tracks.forEach(function (track, i) {
+      const li = document.createElement("li");
+      li.className = "music-item";
+
+      const top = document.createElement("div");
+      top.className = "music-item-top";
+
+      const num = document.createElement("span");
+      num.className = "music-num";
+      num.textContent = i + 1;
+
+      const title = document.createElement("input");
+      title.type = "text";
+      title.className = "music-title";
+      title.maxLength = 60;
+      title.value = track.title;
+      title.placeholder = "اسم الأغنية";
+      title.addEventListener("input", function () { track.title = title.value; });
+
+      const actions = document.createElement("div");
+      actions.className = "music-actions";
+
+      const up = makeIconBtn("↑", "تحريك لأعلى", "music-move");
+      up.disabled = i === 0;
+      up.addEventListener("click", function () { moveTrack(i, i - 1); });
+
+      const down = makeIconBtn("↓", "تحريك لأسفل", "music-move");
+      down.disabled = i === tracks.length - 1;
+      down.addEventListener("click", function () { moveTrack(i, i + 1); });
+
+      const del = makeIconBtn("✕", "حذف الأغنية", "danger");
+      del.addEventListener("click", function () { removeTrack(i); });
+
+      actions.append(up, down, del);
+      top.append(num, title, actions);
+
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.preload = "none";
+      audio.src = track.url;
+      audio.addEventListener("play", function () {
+        musicListEl.querySelectorAll("audio").forEach(function (a) {
+          if (a !== audio) a.pause();
+        });
+      });
+
+      const pick = document.createElement("label");
+      pick.className = "music-pick";
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "musicCurrent";
+      radio.checked = track.id === musicState.current;
+      radio.addEventListener("change", function () { musicState.current = track.id; });
+      const pickText = document.createElement("span");
+      pickText.textContent = "دي الأغنية اللي تشتغل في الموقع";
+      pick.append(radio, pickText);
+
+      li.append(top, audio, pick);
+      musicListEl.appendChild(li);
+    });
+  }
 
   async function loadMusicSetting() {
     const { data, error } = await supabaseClient
@@ -101,33 +245,45 @@ document.addEventListener("DOMContentLoaded", function () {
       .eq("id", "site")
       .single();
 
-    if (!error && data && data.music_url) {
-      musicUrlInput.value = data.music_url;
-      musicPreviewPlayer.src = data.music_url;
-      musicPreviewPlayer.classList.remove("hidden");
-    }
+    const cfg = !error && data ? parseMusicConfig(data.music_url) : null;
+    musicState = cfg || { mode: "single", current: null, tracks: [] };
+    renderMusicList();
   }
 
-  musicFileInput.addEventListener("change", function () {
-    const file = this.files[0];
-    if (!file) return;
-    musicPreviewPlayer.src = URL.createObjectURL(file);
-    musicPreviewPlayer.classList.remove("hidden");
+  musicModeRadios.forEach(function (r) {
+    r.addEventListener("change", function () {
+      if (!r.checked) return;
+      musicState.mode = r.value;
+      musicSettingsForm.dataset.mode = r.value;
+    });
   });
 
-  musicSettingsForm.addEventListener("submit", async function (e) {
-    e.preventDefault();
-    musicSettingsMsg.textContent = "";
-    musicFileMsg.textContent = "";
-    const submitBtn = musicSettingsForm.querySelector('button[type="submit"]');
-    const file = musicFileInput.files[0];
-    let url = musicUrlInput.value;
+  addMusicBtn.addEventListener("click", function () { musicFileInput.click(); });
 
-    if (file) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = "جاري رفع الأغنية...";
+  musicFileInput.addEventListener("change", async function () {
+    const files = Array.from(this.files || []);
+    this.value = "";
+    if (!files.length) return;
 
-      const ext = file.name.split(".").pop();
+    setMusicMsg(musicFileMsg, "", true);
+    setMusicMsg(musicSettingsMsg, "", true);
+
+    const slots = MAX_TRACKS - musicState.tracks.length;
+    const toUpload = files.slice(0, Math.max(slots, 0));
+    if (!toUpload.length) {
+      setMusicMsg(musicFileMsg, "الحد الأقصى 4 أغاني. احذف أغنية الأول.", false);
+      return;
+    }
+
+    addMusicBtn.disabled = true;
+    musicSaveBtn.disabled = true;
+    let added = 0;
+
+    for (let i = 0; i < toUpload.length; i++) {
+      const file = toUpload[i];
+      setMusicMsg(musicFileMsg, "جاري رفع الأغنية " + (i + 1) + " من " + toUpload.length + "...", true);
+
+      const ext = (file.name.split(".").pop() || "mp3").replace(/[^a-z0-9]/gi, "") || "mp3";
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
       const { error: uploadError } = await supabaseClient
@@ -135,14 +291,10 @@ document.addEventListener("DOMContentLoaded", function () {
         .from("site-music")
         .upload(fileName, file);
 
-      submitBtn.disabled = false;
-      submitBtn.textContent = "حفظ";
-
       if (uploadError) {
         console.error("Music upload error:", uploadError);
-        musicFileMsg.style.color = "var(--danger)";
-        musicFileMsg.textContent = "فشل رفع الأغنية: " + (uploadError.message || uploadError.error || "خطأ غير معروف");
-        return;
+        setMusicMsg(musicFileMsg, "فشل رفع \"" + file.name + "\": " + (uploadError.message || "خطأ غير معروف"), false);
+        break;
       }
 
       const { data: publicUrlData } = supabaseClient
@@ -150,27 +302,56 @@ document.addEventListener("DOMContentLoaded", function () {
         .from("site-music")
         .getPublicUrl(fileName);
 
-      url = publicUrlData.publicUrl;
-      musicUrlInput.value = url;
+      musicState.tracks.push({
+        id: newTrackId(),
+        title: file.name.replace(/\.[^.]+$/, "").replace(/[_]+/g, " ").trim().slice(0, 60) || "أغنية",
+        url: publicUrlData.publicUrl
+      });
+      added++;
     }
 
-    if (!url) {
-      musicFileMsg.style.color = "var(--danger)";
-      musicFileMsg.textContent = "اختر ملف أغنية أولاً.";
+    musicSaveBtn.disabled = false;
+    renderMusicList();
+
+    if (added > 0) {
+      let msg = "تم رفع " + added + " أغنية. اضغط حفظ لتطبيق التغييرات.";
+      if (files.length > toUpload.length) msg += " (الباقي اتجاهل لأن الحد الأقصى 4 أغاني)";
+      setMusicMsg(musicFileMsg, "", true);
+      setMusicMsg(musicSettingsMsg, msg, true);
+    }
+  });
+
+  musicSettingsForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    setMusicMsg(musicSettingsMsg, "", true);
+    setMusicMsg(musicFileMsg, "", true);
+
+    if (!musicState.tracks.length) {
+      setMusicMsg(musicFileMsg, "أضف أغنية واحدة على الأقل.", false);
       return;
     }
 
+    const checkedMode = musicSettingsForm.querySelector('input[name="musicMode"]:checked');
+    const config = {
+      v: 2,
+      mode: checkedMode ? checkedMode.value : musicState.mode,
+      current: musicState.current,
+      tracks: musicState.tracks.map(function (t) {
+        return { id: t.id, title: (t.title || "").trim() || "أغنية", url: t.url };
+      })
+    };
+
+    musicSaveBtn.disabled = true;
     const { error } = await supabaseClient
       .from("settings")
-      .upsert({ id: "site", music_url: url });
+      .upsert({ id: "site", music_url: JSON.stringify(config) });
+    musicSaveBtn.disabled = false;
 
     if (error) {
-      musicSettingsMsg.style.color = "var(--danger)";
-      musicSettingsMsg.textContent = "حصل خطأ أثناء الحفظ.";
+      console.error("Music settings save error:", error);
+      setMusicMsg(musicSettingsMsg, "حصل خطأ أثناء الحفظ: " + (error.message || ""), false);
     } else {
-      musicFileInput.value = "";
-      musicSettingsMsg.style.color = "var(--success)";
-      musicSettingsMsg.textContent = "تم حفظ الأغنية بنجاح.";
+      setMusicMsg(musicSettingsMsg, "تم حفظ إعدادات الموسيقى بنجاح.", true);
     }
   });
 
