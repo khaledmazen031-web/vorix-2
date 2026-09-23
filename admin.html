@@ -57,12 +57,38 @@
     <div class="panel-header" style="margin-top:32px;">
       <h2>إعدادات الموقع</h2>
     </div>
-    <form id="musicSettingsForm" class="modal-box" style="margin:0;">
-      <label>ملف أغنية الموقع</label>
-      <input type="file" id="musicFileInput" accept="audio/*">
-      <input type="hidden" id="musicUrlInput">
-      <audio id="musicPreviewPlayer" class="hidden" controls style="width:100%;"></audio>
+    <form id="musicSettingsForm" class="modal-box music-box" data-mode="single">
+      <h3>موسيقى الموقع</h3>
+
+      <label>طريقة التشغيل</label>
+      <div class="mode-options">
+        <label class="mode-option">
+          <input type="radio" name="musicMode" value="single" checked>
+          <span>أغنية واحدة فقط (بتتكرر باستمرار)</span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="musicMode" value="sequence">
+          <span>كل الأغاني بترتيب معين (وبتعيد من الأول بعد آخر أغنية)</span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="musicMode" value="shuffle">
+          <span>كل الأغاني بشكل عشوائي</span>
+        </label>
+      </div>
+
+      <label>الأغاني (<span id="musicCount">0</span> / 4)</label>
+      <p class="music-hint">
+        <span class="hint-single">اختر الأغنية اللي عايزها تشتغل في الموقع.</span>
+        <span class="hint-sequence">رتّب الأغاني بالأسهم، وهتشتغل بنفس الترتيب.</span>
+        <span class="hint-shuffle">الأغاني هتشتغل بترتيب عشوائي كل مرة.</span>
+      </p>
+      <ul id="musicList" class="music-list"></ul>
+      <p id="musicListEmpty" class="music-empty">لا توجد أغاني بعد. اضغط "إضافة أغنية".</p>
+
+      <input type="file" id="musicFileInput" accept="audio/*" multiple class="hidden">
+      <button type="button" id="addMusicBtn" class="secondary-btn">+ إضافة أغنية</button>
       <p id="musicFileMsg" class="error-text"></p>
+
       <div class="modal-actions">
         <button type="submit" class="primary-btn">حفظ</button>
       </div>
