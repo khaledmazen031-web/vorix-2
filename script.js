@@ -84,7 +84,7 @@ function parseMusicConfig(raw) {
         try {
             const cfg = JSON.parse(s);
             if (cfg && Array.isArray(cfg.tracks)) {
-                const tracks = cfg.tracks.filter(function (t) { return t && t.url; }).slice(0, 4);
+                const tracks = cfg.tracks.filter(function (t) { return t && t.url; });
                 if (tracks.length) {
                     return {
                         mode: ["single", "sequence", "shuffle"].indexOf(cfg.mode) !== -1 ? cfg.mode : "single",
