@@ -89,9 +89,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // ---------- SITE SETTINGS (MUSIC PLAYLIST) ----------
   // Stored in settings(id = "site").music_url as a JSON string:
   // { v: 2, mode: "single" | "sequence" | "shuffle", current: "<track id>",
-  //   tracks: [{ id, title, url }, ...] }   (max 4 tracks)
+  //   tracks: [{ id, title, url }, ...] }   (no fixed max)
   // An old plain-URL value is still understood and shown as a single track.
-  const MAX_TRACKS = 4;
+  const MAX_TRACKS = Infinity;
   const musicSettingsForm = document.getElementById("musicSettingsForm");
   const musicListEl = document.getElementById("musicList");
   const musicListEmpty = document.getElementById("musicListEmpty");
@@ -172,8 +172,8 @@ document.addEventListener("DOMContentLoaded", function () {
     musicModeRadios.forEach(function (r) { r.checked = r.value === musicState.mode; });
     musicCountEl.textContent = tracks.length;
     musicListEmpty.classList.toggle("hidden", tracks.length > 0);
-    addMusicBtn.disabled = tracks.length >= MAX_TRACKS;
-    addMusicBtn.textContent = tracks.length >= MAX_TRACKS ? "وصلت للحد الأقصى (4 أغاني)" : "+ إضافة أغنية";
+    addMusicBtn.disabled = false;
+    addMusicBtn.textContent = "+ إضافة أغنية";
 
     musicListEl.innerHTML = "";
     tracks.forEach(function (track, i) {
@@ -268,10 +268,8 @@ document.addEventListener("DOMContentLoaded", function () {
     setMusicMsg(musicFileMsg, "", true);
     setMusicMsg(musicSettingsMsg, "", true);
 
-    const slots = MAX_TRACKS - musicState.tracks.length;
-    const toUpload = files.slice(0, Math.max(slots, 0));
+    const toUpload = files;
     if (!toUpload.length) {
-      setMusicMsg(musicFileMsg, "الحد الأقصى 4 أغاني. احذف أغنية الأول.", false);
       return;
     }
 
@@ -315,7 +313,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (added > 0) {
       let msg = "تم رفع " + added + " أغنية. اضغط حفظ لتطبيق التغييرات.";
-      if (files.length > toUpload.length) msg += " (الباقي اتجاهل لأن الحد الأقصى 4 أغاني)";
       setMusicMsg(musicFileMsg, "", true);
       setMusicMsg(musicSettingsMsg, msg, true);
     }
